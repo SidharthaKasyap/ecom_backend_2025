@@ -10,6 +10,7 @@ import { Product } from "../models/product.js";
 import { rm } from "fs";
 import { de, faker } from "@faker-js/faker";
 import { myCache } from "../app.js";
+import { invalidateCache } from "../utils/features.js";
 
 export const newProduct = TryCatch(
   async (req: Request<{}, {}, NewProductRequestBody>, res, next) => {
@@ -40,6 +41,8 @@ export const newProduct = TryCatch(
       category: category.toLowerCase(),
       photo: photo?.path,
     });
+
+    await invalidateCache({ product: true });
 
     return res.status(201).json({
       success: true,
@@ -72,9 +75,33 @@ export const updateProduct = TryCatch(async (req, res, next) => {
 
   await product.save();
 
+  await invalidateCache({ product: true });
+
   return res.status(200).json({
     success: true,
     message: "Product updated Successfully",
+  });
+});
+
+export const deleteSingleProduct = TryCatch(async (req, res, next) => {
+  let product;
+
+  const { id } = req.params;
+  product = await Product.findById({ id });
+
+  if (!product) return next(new ErrorHandler("Product not found", 404));
+
+  rm(product?.photo!, () => {
+    console.log("product photo deleted");
+  });
+
+  await product.deleteOne();
+
+  await invalidateCache({ product: true });
+
+  return res.status(200).json({
+    success: true,
+    product,
   });
 });
 
@@ -148,26 +175,6 @@ export const getSingleProduct = TryCatch(async (req, res, next) => {
 
     myCache.set(`product-${id}`, JSON.stringify(product));
   }
-
-  return res.status(200).json({
-    success: true,
-    product,
-  });
-});
-
-export const deleteSingleProduct = TryCatch(async (req, res, next) => {
-  let product;
-
-  const { id } = req.params;
-  product = await Product.findById({ id });
-
-  if (!product) return next(new ErrorHandler("Product not found", 404));
-
-  rm(product?.photo!, () => {
-    console.log("product photo deleted");
-  });
-
-  await product.deleteOne();
 
   return res.status(200).json({
     success: true,
