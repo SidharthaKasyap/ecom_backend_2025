@@ -9,6 +9,7 @@ import ErrorHandler from "../utils/utility-class.js";
 import { Product } from "../models/product.js";
 import { rm } from "fs";
 import { de, faker } from "@faker-js/faker";
+import { myCache } from "../app.js";
 
 export const newProduct = TryCatch(
   async (req: Request<{}, {}, NewProductRequestBody>, res, next) => {
@@ -88,7 +89,13 @@ export const getlatestProducts = TryCatch(async (req, res, next) => {
   //   await redis.setex("latest-products", redisTTL, JSON.stringify(products));
   // }
 
-  products = await Product.find({}).sort({ createdAt: -1 }).limit(5);
+  if (myCache.has("latest-products")) {
+    products = JSON.parse(myCache.get("latest-products")!);
+  } else {
+    products = await Product.find({}).sort({ createdAt: -1 }).limit(5);
+    myCache.set("latest-products", JSON.stringify(products));
+  }
+
   return res.status(200).json({
     success: true,
     products,
@@ -98,7 +105,14 @@ export const getlatestProducts = TryCatch(async (req, res, next) => {
 export const getAllCategories = TryCatch(async (req, res, next) => {
   let categories;
 
-  categories = await Product.distinct("category");
+  if (myCache.has("categories")) {
+    categories = JSON.parse(myCache.get("all-categories")!);
+  } else {
+    categories = await Product.distinct("category");
+
+    myCache.set("categories", JSON.stringify(categories));
+  }
+
   return res.status(200).json({
     success: true,
     categories,
@@ -108,7 +122,13 @@ export const getAllCategories = TryCatch(async (req, res, next) => {
 export const getAdminProducts = TryCatch(async (req, res, next) => {
   let products;
 
-  products = await Product.find({}).sort({ createdAt: -1 });
+  if (myCache.has("all-products")) {
+    products = JSON.parse(myCache.get("all-products")!);
+  } else {
+    products = await Product.find({}).sort({ createdAt: -1 });
+    myCache.set("all-products", JSON.stringify(products));
+  }
+
   return res.status(200).json({
     success: true,
     products,
@@ -120,9 +140,14 @@ export const getSingleProduct = TryCatch(async (req, res, next) => {
 
   const { id } = req.params;
 
-  product = await Product.findById(id);
+  if (myCache.has(`product-${id}`)) {
+    product = JSON.parse(myCache.get(`product-${id}`)!);
+  } else {
+    product = await Product.findById(id);
+    if (!product) return next(new ErrorHandler("Product not found", 404));
 
-  if (!product) return next(new ErrorHandler("Product not found", 404));
+    myCache.set(`product-${id}`, JSON.stringify(product));
+  }
 
   return res.status(200).json({
     success: true,
@@ -183,7 +208,7 @@ export const searchAllProduct = TryCatch(
     });
   }
 );
-
+//
 // const generateRandomProducts = async (count: number = 10) => {
 //   const products = [];
 
