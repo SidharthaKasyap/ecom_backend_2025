@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
-import { InvalidateCacheProps, OrderItemType } from "../types/types.js";
-import { Product } from "../models/product.js";
 import { myCache } from "../app.js";
-import { Order } from "../models/order.js";
+import { Product } from "../models/product.js";
+import { InvalidateCacheProps, OrderItemType } from "../types/types.js";
 
 export const connectDB = (uri: string) => {
   mongoose
@@ -61,4 +60,11 @@ export const reduceStock = async (orderItems: OrderItemType[]) => {
 
     await product.save();
   }
+};
+
+
+export const calculatePercentage = (thisMonth: number, lastMonth: number) => {
+  if (lastMonth === 0) return thisMonth * 100;
+  const percent = (thisMonth / lastMonth) * 100;
+  return Number(percent.toFixed(0));
 };
