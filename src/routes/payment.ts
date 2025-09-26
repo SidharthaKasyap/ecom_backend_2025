@@ -4,6 +4,7 @@ import { adminOnly } from "../middlewares/auth.js";
 import {
   allCoupons,
   applyDiscount,
+  createPaymentIntent,
   deleteCoupon,
   getCoupon,
   newCoupon,
@@ -11,6 +12,8 @@ import {
 } from "../controllers/payment.js";
 
 const app = express.Router();
+
+app.post("/create", createPaymentIntent);
 
 app.post("/coupon/new", adminOnly, newCoupon);
 
