@@ -3,6 +3,7 @@ import { config } from "dotenv";
 import morgan from "morgan";
 import Stripe from "stripe";
 import NodeCache from "node-cache";
+import cors from "cors";
 
 // importing routes
 
@@ -31,6 +32,7 @@ const app = express();
 app.use(express.json());
 
 app.use(morgan("dev"));
+app.use(cors());
 
 app.use("/api/v1/user", userRoute);
 app.use("/api/v1/product", productRoute);
